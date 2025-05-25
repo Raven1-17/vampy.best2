@@ -6,21 +6,14 @@
 </head>
 <body style="background:#111; color:#eee; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh">
   <h1>Enter Password</h1>
-  <div id="message" style="margin-bottom:1em; color:red;"></div>
-  <input type="password" id="password" autocomplete="off">
+  <div id="message" style="margin-bottom:1em;"></div>
+  <input type="text" id="password" placeholder="Password">
   <button id="submit">Submit</button>
   <a id="link" href="#" target="_blank" style="display:none; color:#4af; margin-top:1em;"></a>
 
   <script>
     const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
-    let targetUrl = "";
-
-    try {
-      targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w_c2hhcmVjb2RlPTYyMjNCOUY4RkVD=");
-    } catch (err) {
-      document.getElementById('message').textContent = "Error decoding link. Please contact support.";
-      console.error("Base64 decode error:", err);
-    }
+    const targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w/c2hhcmVjb2RlPTYyMjNCOUY4RkVD");
 
     const encoder = new TextEncoder();
     async function hashPassword(password) {
@@ -30,21 +23,21 @@
     }
 
     document.getElementById("submit").onclick = async () => {
-      const entered = document.getElementById("password").value;
-      const hashed = await hashPassword(entered);
-      const message = document.getElementById("message");
+      const input = document.getElementById("password").value;
+      const hashed = await hashPassword(input);
+      const msg = document.getElementById("message");
       const link = document.getElementById("link");
 
       if (hashed === expectedHash) {
-        message.style.color = "lightgreen";
-        message.textContent = "Correct password. Redirecting soon...";
+        msg.style.color = "lightgreen";
+        msg.textContent = "Password correct. Redirecting in 10 seconds...";
         link.href = targetUrl;
         link.textContent = targetUrl;
         link.style.display = "block";
         setTimeout(() => window.location.href = targetUrl, 10000);
       } else {
-        message.style.color = "red";
-        message.textContent = "Incorrect password. Please try again.";
+        msg.style.color = "red";
+        msg.textContent = "Incorrect password.";
         link.style.display = "none";
       }
     };
