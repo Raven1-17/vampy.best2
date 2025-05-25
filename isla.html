@@ -45,15 +45,7 @@
 
   <script>
     const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
-    const base64URL = "aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w/c2hhcmVjb2RlPTYyMjNCOUY4RkVD";
-
-    let targetUrl = "";
-    try {
-      targetUrl = atob(base64URL);
-    } catch (err) {
-      document.getElementById('message').textContent = "Error decoding link.";
-      console.error("Base64 decode error:", err);
-    }
+    const targetUrl = "https://pishock.com/#/Control?sharecode=6223B9F8FEC";
 
     const encoder = new TextEncoder();
 
@@ -61,33 +53,9 @@
       const data = encoder.encode(pw);
       const hashBuffer = await crypto.subtle.digest('SHA-256', data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashString = btoa(String.fromCharCode(...hashArray));
-      return hashString;
+      const base64 = btoa(hashArray.map(b => String.fromCharCode(b)).join(''));
+      return base64;
     }
 
     document.getElementById("submit").onclick = async () => {
-      const input = document.getElementById("password").value;
-      const hash = await hashPassword(input.trim());
-      const message = document.getElementById("message");
-      const link = document.getElementById("link");
-
-      console.log("Entered:", input);
-      console.log("Hash:", hash);
-      console.log("Expected:", expectedHash);
-
-      if (hash === expectedHash) {
-        message.style.color = "lightgreen";
-        message.textContent = "Correct password. Redirecting in 10 seconds...";
-        link.href = targetUrl;
-        link.textContent = targetUrl;
-        link.style.display = "block";
-        setTimeout(() => window.location.href = targetUrl, 10000);
-      } else {
-        message.style.color = "red";
-        message.textContent = "Incorrect password. Please try again.";
-        link.style.display = "none";
-      }
-    };
-  </script>
-</body>
-</html>
+      const input =
