@@ -21,10 +21,10 @@
 
   <script>
     const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
-
     let targetUrl = "";
+
     try {
-      targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w_c2hhcmVjb2RlPTYyMjNCOUY4RkVD");
+      targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w_c2hhcmVjb2RlPTYyMjNCOUY4RkVD=");
     } catch (err) {
       document.getElementById('message').textContent = "Error decoding link. Please contact support.";
       console.error("Base64 decode error:", err);
