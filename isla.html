@@ -3,41 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <title>Protected Link - Isla</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #message {
+      margin-bottom: 1em;
+      color: red;
+    }
+    input[type="text"] {
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      margin-left: 0.5em;
+    }
+    a {
+      color: #4af;
+      word-break: break-all;
+      margin-top: 1em;
+      display: block;
+    }
+  </style>
 </head>
-<body style="background:#111; color:#eee; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh">
+<body>
   <h1>Enter Password</h1>
-  <div id="message" style="margin-bottom:1em;"></div>
-  <input type="text" id="password" placeholder="Password">
+  <div id="message"></div>
+  <input type="text" id="password" autocomplete="off" placeholder="Enter password" />
   <button id="submit">Submit</button>
-  <a id="link" href="#" target="_blank" style="display:none; color:#4af; margin-top:1em;"></a>
+  <a id="link" href="#" target="_blank" style="display:none;"></a>
 
   <script>
     const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
-    const targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w/c2hhcmVjb2RlPTYyMjNCOUY4RkVD");
+    const base64URL = "aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w/c2hhcmVjb2RlPTYyMjNCOUY4RkVD";
+
+    let targetUrl = "";
+    try {
+      targetUrl = atob(base64URL);
+    } catch (err) {
+      document.getElementById('message').textContent = "Error decoding link.";
+      console.error("Base64 decode error:", err);
+    }
 
     const encoder = new TextEncoder();
-    async function hashPassword(password) {
-      const data = encoder.encode(password);
-      const hash = await crypto.subtle.digest("SHA-256", data);
-      return btoa(String.fromCharCode(...new Uint8Array(hash)));
+
+    async function hashPassword(pw) {
+      const data = encoder.encode(pw);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashString = btoa(String.fromCharCode(...hashArray));
+      return hashString;
     }
 
     document.getElementById("submit").onclick = async () => {
       const input = document.getElementById("password").value;
-      const hashed = await hashPassword(input);
-      const msg = document.getElementById("message");
+      const hash = await hashPassword(input.trim());
+      const message = document.getElementById("message");
       const link = document.getElementById("link");
 
-      if (hashed === expectedHash) {
-        msg.style.color = "lightgreen";
-        msg.textContent = "Password correct. Redirecting in 10 seconds...";
+      console.log("Entered:", input);
+      console.log("Hash:", hash);
+      console.log("Expected:", expectedHash);
+
+      if (hash === expectedHash) {
+        message.style.color = "lightgreen";
+        message.textContent = "Correct password. Redirecting in 10 seconds...";
         link.href = targetUrl;
         link.textContent = targetUrl;
         link.style.display = "block";
         setTimeout(() => window.location.href = targetUrl, 10000);
       } else {
-        msg.style.color = "red";
-        msg.textContent = "Incorrect password.";
+        message.style.color = "red";
+        message.textContent = "Incorrect password. Please try again.";
         link.style.display = "none";
       }
     };
