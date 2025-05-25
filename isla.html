@@ -6,7 +6,7 @@
   <title>Protected Link - Isla</title>
   <style>
     body { font-family: Arial, sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    #message { margin-bottom: 1em; }
+    #message { margin-bottom: 1em; color: red; }
     input[type="password"] { padding: 0.5em; font-size: 1em; }
     button { padding: 0.5em 1em; font-size: 1em; margin-left: 0.5em; }
     a { color: #4af; word-break: break-all; margin-top: 1em; display: block; }
@@ -21,7 +21,14 @@
 
   <script>
     const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
-    const targetUrl = atob(`aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w_c2hhcmVjb2RlPTYyMjNCOUY4RkVD`);
+
+    let targetUrl = "";
+    try {
+      targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0NvbnRyb2w_c2hhcmVjb2RlPTYyMjNCOUY4RkVD");
+    } catch (err) {
+      document.getElementById('message').textContent = "Error decoding link. Please contact support.";
+      console.error("Base64 decode error:", err);
+    }
 
     const passwordInput = document.getElementById('password');
     const submitButton = document.getElementById('submit');
@@ -42,10 +49,12 @@
         linkElem.href = targetUrl;
         linkElem.textContent = targetUrl;
         linkElem.style.display = 'block';
+        message.style.color = "green";
         message.textContent = "Correct password. Redirecting in 10 seconds...";
         setTimeout(() => { window.location.href = targetUrl; }, 10000);
       } else {
-        message.textContent = "Incorrect password.";
+        message.style.color = "red";
+        message.textContent = "Incorrect password. Please try again.";
       }
     };
   </script>
