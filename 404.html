@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta http-equiv="refresh" content="0; url=/" />
-    <script>
-      // Optional: preserve the subpath in a query param
-      const currentPath = window.location.pathname;
-      window.location.replace("/?page=" + currentPath.slice(1));
-    </script>
-  </head>
-  <body></body>
+<head>
+  <meta http-equiv="refresh" content="0; url=/" />
+  <script>
+    const currentPath = window.location.pathname;
+    // Redirect any unknown path to /?page=path
+    window.location.replace('/?page=' + currentPath.substring(1));
+  </script>
+</head>
+<body></body>
 </html>
