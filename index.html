@@ -1,40 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Secure Link Access</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #eee;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-  }
-  #message {
-    margin-bottom: 1em;
-  }
-  input[type="password"] {
-    padding: 0.5em;
-    font-size: 1em;
-  }
-  button {
-    padding: 0.5em 1em;
-    font-size: 1em;
-    margin-left: 0.5em;
-  }
-  a {
-    color: #4af;
-    word-break: break-all;
-    margin-top: 1em;
-    display: block;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secure Link Access</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    #message { margin-bottom: 1em; }
+    input[type="password"] { padding: 0.5em; font-size: 1em; }
+    button { padding: 0.5em 1em; font-size: 1em; margin-left: 0.5em; }
+    a { color: #4af; word-break: break-all; margin-top: 1em; display: block; }
+  </style>
 </head>
 <body>
 <h1>Enter Password</h1>
@@ -42,10 +18,9 @@
 <input type="password" id="password" autocomplete="off" />
 <button id="submit">Submit</button>
 <a id="link" href="#" target="_blank" style="display:none;"></a>
-
 <script>
 (async () => {
-  const basePath = '/vampy.best2';  // Your GitHub repo base path
+  console.log('Script running');
   const message = document.getElementById('message');
   const passwordInput = document.getElementById('password');
   const submitButton = document.getElementById('submit');
@@ -53,19 +28,45 @@
 
   let config = null;
   try {
-    const resp = await fetch(basePath + '/config.json');
-    if (!resp.ok) throw new Error('Config fetch failed');
+    const resp = await fetch('/config.json');
     config = await resp.json();
-  } catch (err) {
+    console.log('Config loaded:', config);
+  } catch (e) {
     message.textContent = "Error loading config.";
     submitButton.disabled = true;
-    console.error(err);
+    console.error('Config load failed:', e);
     return;
   }
 
-  let page = null;
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-  if (pathParts.length >= 2 && pathParts[0] === basePath.replace(/^\/+/,'') ) {
-    page = pathParts[1];
-  } else {
-    message.textContent = "Invalid UR
+  const page = window.location.pathname.slice(1).toLowerCase();
+  if (!config[page]) {
+    message.textContent = "Page not found.";
+    submitButton.disabled = true;
+    return;
+  }
+
+  const encoder = new TextEncoder();
+  async function hashPassword(pw) {
+    const data = encoder.encode(pw);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(hash)));
+  }
+
+  submitButton.onclick = async () => {
+    const entered = passwordInput.value;
+    const hashed = await hashPassword(entered);
+    const expected = config[page].passwordHash;
+    if (hashed === expected) {
+      const url = atob(config[page].urlBase64);
+      linkElem.href = url;
+      linkElem.textContent = url;
+      linkElem.style.display = 'block';
+      setTimeout(() => { window.location.href = url; }, 10000);
+    } else {
+      message.textContent = "Incorrect password.";
+    }
+  };
+})();
+</script>
+</body>
+</html>
