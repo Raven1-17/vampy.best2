@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protected Link - Vampy</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    #message { margin-bottom: 1em; }
+    input[type="password"] { padding: 0.5em; font-size: 1em; }
+    button { padding: 0.5em 1em; font-size: 1em; margin-left: 0.5em; }
+    a { color: #4af; word-break: break-all; margin-top: 1em; display: block; }
+  </style>
+</head>
+<body>
+  <h1>Enter Password</h1>
+  <div id="message"></div>
+  <input type="password" id="password" autocomplete="off" />
+  <button id="submit">Submit</button>
+  <a id="link" href="#" target="_blank" style="display:none;"></a>
+
+  <script>
+    const expectedHash = "VnBzfYTi05uIzYGUW7KhqlqjGQjtwN+pGzQp55sUR58=";
+    const targetUrl = atob("aHR0cHM6Ly9waXNob2NrLmNvbS8jL0xpbmtDb250cm9sP2lkPTI2ZjUyY2E4LTg5MTUtNDdlYi05OGQxLWEwMTA2ZGIwZTI3Nw==");
+
+    const passwordInput = document.getElementById('password');
+    const submitButton = document.getElementById('submit');
+    const message = document.getElementById('message');
+    const linkElem = document.getElementById('link');
+
+    const encoder = new TextEncoder();
+    async function hashPassword(pw) {
+      const data = encoder.encode(pw);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(hash)));
+    }
+
+    submitButton.onclick = async () => {
+      const entered = passwordInput.value;
+      const hashed = await hashPassword(entered);
+      if (hashed === expectedHash) {
+        linkElem.href = targetUrl;
+        linkElem.textContent = targetUrl;
+        linkElem.style.display = 'block';
+        message.textContent = "Correct password. Redirecting in 10 seconds...";
+        setTimeout(() => { window.location.href = targetUrl; }, 10000);
+      } else {
+        message.textContent = "Incorrect password.";
+      }
+    };
+  </script>
+</body>
+</html>
