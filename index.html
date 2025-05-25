@@ -3,105 +3,169 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Access Link</title>
+  <title>Vampy Best Secure Access</title>
   <style>
-    body { font-family: Arial, sans-serif; display: flex; height: 100vh; justify-content: center; align-items: center; background: #111; color: #eee; margin: 0; }
-    #container { max-width: 400px; width: 100%; text-align: center; }
-    input[type=password] { width: 100%; padding: 12px; margin: 12px 0; font-size: 1.2rem; border-radius: 4px; border: none; }
-    button { padding: 12px 20px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 4px; background: #28a745; color: white; }
-    a { display: block; margin: 20px 0; font-size: 1.3rem; color: #0af; text-decoration: underline; }
-    #timer { color: #aaa; font-size: 0.9rem; }
+    body {
+      background: #111;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #message {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+    input[type="password"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: none;
+      margin-right: 0.5rem;
+      width: 250px;
+      max-width: 90vw;
+    }
+    button {
+      padding: 0.55rem 1rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: none;
+      background: #5c4dff;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 1.5rem;
+      font-size: 1.15rem;
+      text-align: center;
+    }
+    a {
+      color: #5c4dff;
+      text-decoration: none;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <div id="container">
-    <h1>Enter Password</h1>
-    <input id="password" type="password" autocomplete="off" />
-    <button id="submit">Unlock</button>
-    <div id="message"></div>
-    <a id="link" href="#" target="_blank" style="display:none;">Click here to continue</a>
-    <div id="timer"></div>
+  <div id="message">Loading...</div>
+  <div id="form" style="display:none;">
+    <input type="password" id="password" placeholder="Enter password" autocomplete="off" />
+    <button id="submitBtn">Submit</button>
   </div>
+  <div id="result"></div>
 
 <script>
 (async () => {
-  const slug = window.location.pathname.slice(1).toLowerCase();
-
-  function b64Decode(str) {
-    return decodeURIComponent(atob(str).split('').map(c =>
-      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-  }
-
-  async function sha256(msg) {
-    const buf = new TextEncoder().encode(msg);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buf);
-    return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-  }
-
-  const container = document.getElementById('container');
-  const input = document.getElementById('password');
-  const button = document.getElementById('submit');
   const message = document.getElementById('message');
-  const link = document.getElementById('link');
-  const timer = document.getElementById('timer');
+  const form = document.getElementById('form');
+  const passwordInput = document.getElementById('password');
+  const submitBtn = document.getElementById('submitBtn');
+  const result = document.getElementById('result');
+
+  // Get page key from URL ?page=
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageKey = urlParams.get('page');
+
+  if (!pageKey) {
+    message.textContent = "No access page specified.";
+    return;
+  }
 
   let config = null;
   try {
     const resp = await fetch('/config.json');
+    if (!resp.ok) throw new Error('Config fetch failed');
     config = await resp.json();
-  } catch {
+  } catch (e) {
     message.textContent = "Error loading config.";
-    button.disabled = true;
     return;
   }
 
-  if (!config[slug]) {
-    container.innerHTML = "<h2>Page Not Found</h2>";
+  const entry = config[pageKey.toLowerCase()];
+  if (!entry) {
+    message.textContent = "Access page not found.";
     return;
   }
 
-  const entry = config[slug];
+  message.textContent = `Access page for ${pageKey}`;
+  form.style.display = 'block';
 
-  button.onclick = async () => {
-    const pass = input.value.trim();
+  function base64Decode(str) {
+    try {
+      return atob(str);
+    } catch {
+      return null;
+    }
+  }
+
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    bytes.forEach((b) => binary += String.fromCharCode(b));
+    return btoa(binary);
+  }
+
+  // We'll use subtle crypto to hash the password with SHA-256 and compare
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return arrayBufferToBase64(hashBuffer);
+  }
+
+  let redirectTimer;
+
+  submitBtn.onclick = async () => {
+    submitBtn.disabled = true;
+    message.textContent = 'Checking password...';
+    const pass = passwordInput.value.trim();
     if (!pass) {
-      message.textContent = "Please enter the password.";
+      message.textContent = 'Please enter a password.';
+      submitBtn.disabled = false;
       return;
     }
-    message.textContent = "Checking...";
-    const hash = await sha256(pass);
+
+    const hash = await hashPassword(pass);
 
     if (hash === entry.passwordHash) {
-      message.textContent = "Password correct!";
-      const url = b64Decode(entry.urlBase64);
-      link.href = url;
-      link.style.display = "inline-block";
-      input.style.display = "none";
-      button.style.display = "none";
+      message.textContent = "Password accepted! Redirecting shortly...";
+      form.style.display = 'none';
 
-      let seconds = 10;
-      timer.textContent = `Redirecting in ${seconds} seconds...`;
-      const interval = setInterval(() => {
-        seconds--;
-        if (seconds <= 0) {
-          clearInterval(interval);
-          window.location.href = url;
-        } else {
-          timer.textContent = `Redirecting in ${seconds} seconds...`;
-        }
-      }, 1000);
+      const url = base64Decode(entry.urlBase64);
+      if (!url) {
+        message.textContent = "Invalid URL data.";
+        return;
+      }
+
+      result.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">Click here if not redirected</a>`;
+
+      // Redirect after 10 seconds if user doesn't click
+      redirectTimer = setTimeout(() => {
+        window.location.href = url;
+      }, 10000);
+
     } else {
-      message.textContent = "Incorrect password. Try again.";
-      input.value = "";
-      input.focus();
+      message.textContent = "Incorrect password, please try again.";
+      submitBtn.disabled = false;
     }
   };
 
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") button.click();
+  // Optional: Enter key triggers submit
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !submitBtn.disabled) {
+      submitBtn.click();
+    }
   });
 })();
 </script>
-
 </body>
 </html>
