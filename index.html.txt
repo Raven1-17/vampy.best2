@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Access Link</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; height: 100vh; justify-content: center; align-items: center; background: #111; color: #eee; margin: 0; }
+    #container { max-width: 400px; width: 100%; text-align: center; }
+    input[type=password] { width: 100%; padding: 12px; margin: 12px 0; font-size: 1.2rem; border-radius: 4px; border: none; }
+    button { padding: 12px 20px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 4px; background: #28a745; color: white; }
+    a { display: block; margin: 20px 0; font-size: 1.3rem; color: #0af; text-decoration: underline; }
+    #timer { color: #aaa; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>Enter Password</h1>
+    <input id="password" type="password" autocomplete="off" />
+    <button id="submit">Unlock</button>
+    <div id="message"></div>
+    <a id="link" href="#" target="_blank" style="display:none;">Click here to continue</a>
+    <div id="timer"></div>
+  </div>
+
+<script>
+(async () => {
+  const slug = window.location.pathname.slice(1).toLowerCase();
+
+  function b64Decode(str) {
+    return decodeURIComponent(atob(str).split('').map(c =>
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+
+  async function sha256(msg) {
+    const buf = new TextEncoder().encode(msg);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buf);
+    return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+  }
+
+  const container = document.getElementById('container');
+  const input = document.getElementById('password');
+  const button = document.getElementById('submit');
+  const message = document.getElementById('message');
+  const link = document.getElementById('link');
+  const timer = document.getElementById('timer');
+
+  let config = null;
+  try {
+    const resp = await fetch('/config.json');
+    config = await resp.json();
+  } catch {
+    message.textContent = "Error loading config.";
+    button.disabled = true;
+    return;
+  }
+
+  if (!config[slug]) {
+    container.innerHTML = "<h2>Page Not Found</h2>";
+    return;
+  }
+
+  const entry = config[slug];
+
+  button.onclick = async () => {
+    const pass = input.value.trim();
+    if (!pass) {
+      message.textContent = "Please enter the password.";
+      return;
+    }
+    message.textContent = "Checking...";
+    const hash = await sha256(pass);
+
+    if (hash === entry.passwordHash) {
+      message.textContent = "Password correct!";
+      const url = b64Decode(entry.urlBase64);
+      link.href = url;
+      link.style.display = "inline-block";
+      input.style.display = "none";
+      button.style.display = "none";
+
+      let seconds = 10;
+      timer.textContent = `Redirecting in ${seconds} seconds...`;
+      const interval = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) {
+          clearInterval(interval);
+          window.location.href = url;
+        } else {
+          timer.textContent = `Redirecting in ${seconds} seconds...`;
+        }
+      }, 1000);
+    } else {
+      message.textContent = "Incorrect password. Try again.";
+      input.value = "";
+      input.focus();
+    }
+  };
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") button.click();
+  });
+})();
+</script>
+
+</body>
+</html>
