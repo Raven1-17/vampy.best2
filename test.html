@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Password Test</title>
+</head>
+<body>
+  <h1>Enter Password</h1>
+  <input type="text" id="password" />
+  <button onclick="check()">Submit</button>
+  <p id="output"></p>
+
+  <script>
+    function check() {
+      const input = document.getElementById("password").value;
+      console.log("Entered:", input);
+      document.getElementById("output").textContent =
+        input === "Scarydeer" ? "Correct password" : "Incorrect password";
+    }
+  </script>
+</body>
+</html>
