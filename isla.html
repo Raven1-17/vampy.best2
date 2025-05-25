@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Protected Link - Isla</title>
+  <title>Protected Link - Isla (Plaintext)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,7 +19,7 @@
       margin-bottom: 1em;
       color: red;
     }
-    input[type="text"] {
+    input {
       padding: 0.5em;
       font-size: 1em;
     }
@@ -30,32 +30,45 @@
     }
     a {
       color: #4af;
-      word-break: break-all;
       margin-top: 1em;
       display: block;
+      word-break: break-word;
     }
   </style>
 </head>
 <body>
   <h1>Enter Password</h1>
   <div id="message"></div>
-  <input type="text" id="password" autocomplete="off" placeholder="Enter password" />
+  <input type="text" id="password" placeholder="Enter password" />
   <button id="submit">Submit</button>
-  <a id="link" href="#" target="_blank" style="display:none;"></a>
+  <a id="link" target="_blank" style="display:none;"></a>
 
   <script>
-    const expectedHash = "0RuZwBzEaFXV1uZqk9Gq7/TbL1wtGOzOe8N2klk7kEw=";
+    const correctPassword = "Scarydeer";
     const targetUrl = "https://pishock.com/#/Control?sharecode=6223B9F8FEC";
 
-    const encoder = new TextEncoder();
+    document.getElementById("submit").addEventListener("click", () => {
+      const entered = document.getElementById("password").value.trim();
+      const message = document.getElementById("message");
+      const link = document.getElementById("link");
 
-    async function hashPassword(pw) {
-      const data = encoder.encode(pw);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const base64 = btoa(hashArray.map(b => String.fromCharCode(b)).join(''));
-      return base64;
-    }
+      console.log("Entered password:", entered);
 
-    document.getElementById("submit").onclick = async () => {
-      const input =
+      if (entered === correctPassword) {
+        message.style.color = "lightgreen";
+        message.textContent = "Correct password. Redirecting in 10 seconds...";
+        link.href = targetUrl;
+        link.textContent = targetUrl;
+        link.style.display = "block";
+        setTimeout(() => {
+          window.location.href = targetUrl;
+        }, 10000);
+      } else {
+        message.style.color = "red";
+        message.textContent = "Incorrect password. Please try again.";
+        link.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
