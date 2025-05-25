@@ -1,48 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Secure Link Access</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #eee;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-  }
-  #message {
-    margin-bottom: 1em;
-  }
-  input[type="password"] {
-    padding: 0.5em;
-    font-size: 1em;
-  }
-  button {
-    padding: 0.5em 1em;
-    font-size: 1em;
-    margin-left: 0.5em;
-  }
-  a {
-    color: #4af;
-    word-break: break-all;
-    margin-top: 1em;
-    display: block;
-  }
-</style>
-</head>
-<body>
-<h1>Enter Password</h1>
-<div id="message"></div>
-<input type="password" id="password" autocomplete="off" />
-<button id="submit">Submit</button>
-<a id="link" href="#" target="_blank" style="display:none;"></a>
-
 <script>
 (async () => {
   const basePath = '/vampy.best2';  // Your GitHub repo base path
@@ -56,13 +11,83 @@
     const resp = await fetch(basePath + '/config.json');
     if (!resp.ok) throw new Error('Config fetch failed');
     config = await resp.json();
-  } catch {
+  } catch (err) {
     message.textContent = "Error loading config.";
+    submitButton.disabled = true;
+    console.error(err);
+    return;
+  }
+
+  let page = null;
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  if (pathParts.length >= 2 && pathParts[0] === basePath.replace(/^\/+/,'') ) {
+    page = pathParts[1];
+  } else {
+    message.textContent = "Invalid URL format.";
     submitButton.disabled = true;
     return;
   }
 
-  // Extract the page name from the URL pathname
-  // URL format expected: https://.../vampy.best2/<page>
-  let page = null;
-  const pathParts =
+  if (!config[page]) {
+    message.textContent = "Page not found.";
+    submitButton.disabled = true;
+    return;
+  }
+
+  function base64Decode(str) {
+    try {
+      return atob(str);
+    } catch {
+      return null;
+    }
+  }
+
+  async function verifyPassword(input) {
+    try {
+      if (!window.crypto || !window.crypto.subtle) return false;
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashBase64 = btoa(String.fromCharCode(...hashArray));
+      return hashBase64 === config[page].passwordHash;
+    } catch (e) {
+      console.error('Password verification failed:', e);
+      return false;
+    }
+  }
+
+  submitButton.addEventListener('click', async () => {
+    message.textContent = "Checking password...";
+    submitButton.disabled = true;
+    linkElem.style.display = 'none';
+    try {
+      const isValid = await verifyPassword(passwordInput.value);
+      if (isValid) {
+        const decodedUrl = base64Decode(config[page].urlBase64);
+        if (!decodedUrl) {
+          message.textContent = "Error decoding URL.";
+          submitButton.disabled = false;
+          return;
+        }
+        message.textContent = "Password correct! Redirecting in 10 seconds...";
+        linkElem.href = decodedUrl;
+        linkElem.textContent = decodedUrl;
+        linkElem.style.display = 'block';
+
+        setTimeout(() => {
+          window.location.href = decodedUrl;
+        }, 10000);
+      } else {
+        message.textContent = "Incorrect password, try again.";
+        submitButton.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      message.textContent = "An error occurred. Try again.";
+      submitButton.disabled = false;
+    }
+  });
+})();
+</script>
